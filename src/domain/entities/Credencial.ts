@@ -1,7 +1,9 @@
-import { Autenticavel } from '../interfaces/Autenticavel';
-import { PapelUsuario } from '../enums';
+import { Autenticavel } from '../interfaces/Autenticavel.js';
+import { PapelUsuario } from '../enums.js';
+import { HashSenha } from '../../infrastructure/security/HashSenha.js';
 
 export class Credencial implements Autenticavel {
+
     usuario: string;
     hashSenha: string;
     salt: string;
@@ -23,7 +25,11 @@ export class Credencial implements Autenticavel {
     }
 
     autenticar(usuario: string, senha: string): boolean {
-        return false;
+        if (usuario !== this.usuario) {
+            return false;
+        }
+
+        return this.verificarSenha(senha);
     }
 
     renovarToken(): string {
@@ -31,10 +37,16 @@ export class Credencial implements Autenticavel {
     }
 
     verificarSenha(senhaPlana: string): boolean {
-        return false;
+        const hashSenha = new HashSenha();
+
+        return hashSenha.verificar(
+            senhaPlana,
+            this.hashSenha,
+            this.salt
+        );
     }
 
     atualizarUltimoAcesso(): void {
-        // Implementação
+        this.ultimoAcesso = new Date();
     }
 }
