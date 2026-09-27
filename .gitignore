@@ -1,2 +1,6 @@
 node_modules/
+
 greencode-config.key
+greencode-config.json
+
+data/

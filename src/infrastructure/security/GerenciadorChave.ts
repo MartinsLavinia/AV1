@@ -1,32 +1,26 @@
 import { randomBytes } from 'crypto';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 
 export class GerenciadorChave {
 
-  private caminhoArquivo = './greencode-config.key';
+    private caminhoConfiguracao = './greencode-config.json';
 
-  gerarChave(): Buffer {
-    return randomBytes(32);
-  }
-
-  obterChave(): Buffer {
-
-    if (existsSync(this.caminhoArquivo)) {
-      const chaveHex = readFileSync(
-        this.caminhoArquivo,
-        'utf-8'
-      );
-
-      return Buffer.from(chaveHex, 'hex');
+    gerarChave(): Buffer {
+        return randomBytes(32);
     }
 
-    const chave = this.gerarChave();
+    obterChave(): Buffer {
 
-    writeFileSync(
-      this.caminhoArquivo,
-      chave.toString('hex')
-    );
+        const conteudo = readFileSync(
+            this.caminhoConfiguracao,
+            'utf-8'
+        );
 
-    return chave;
-  }
+        const configuracao = JSON.parse(conteudo);
+
+        return Buffer.from(
+            configuracao.chaveMestra,
+            'hex'
+        );
+    }
 }
