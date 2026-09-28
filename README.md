@@ -9,6 +9,8 @@ CLI em Node.js/TypeScript para provisionamento, autenticação por papéis, cada
 - Para gerar JavaScript e iniciar: `npm run build` e `npm start`.
 - Jornada automatizada: `npm run test:jornada`.
 
+O workflow `.github/workflows/testes-linux.yml` roda em Ubuntu 24.04 a cada `push` e `pull_request`, e também pode ser iniciado manualmente pela aba **Actions** do GitHub. Ele instala dependências com `npm ci`, compila e executa a jornada automatizada.
+
 No primeiro início, defina o usuário e a senha do administrador. Nos próximos inícios, autentique-se e digite um comando. Use `Tab` para completar comandos e opções, `↑` para navegar pelo histórico entre sessões, `ajuda` para ver os comandos do seu papel e `sair` para encerrar a sessão. O arquivo `data/.greencode-history` guarda os comandos digitados; a senha de uma conta é sempre solicitada separadamente e não entra nele.
 
 ## Comandos disponíveis
