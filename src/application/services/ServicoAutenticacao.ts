@@ -1,19 +1,15 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from "crypto";
 
-import { Credencial } from '../../domain/entities/Credencial.js';
-import { Sessao } from '../../domain/entities/Sessao.js';
+import { Credencial } from "../../domain/entities/Credencial.js";
+import { Sessao } from "../../domain/entities/Sessao.js";
 
 export class ServicoAutenticacao {
-
   autenticar(
     credencial: Credencial,
-    senha: string
+    usuario: string,
+    senha: string,
   ): Sessao | null {
-
-    const autenticado = credencial.autenticar(
-      credencial.usuario,
-      senha
-    );
+    const autenticado = credencial.autenticar(usuario, senha);
 
     if (!autenticado) {
       return null;
@@ -21,25 +17,22 @@ export class ServicoAutenticacao {
 
     credencial.atualizarUltimoAcesso();
 
-    const token = randomBytes(32).toString('hex');
+    const token = randomBytes(32).toString("hex");
 
     const criacao = new Date();
 
-    const expiracao = new Date(
-      criacao.getTime() + 30 * 60 * 1000
-    );
+    const expiracao = new Date(criacao.getTime() + 30 * 60 * 1000);
 
     return new Sessao(
       token,
       credencial.usuario,
       credencial.papel,
       criacao,
-      expiracao
+      expiracao,
     );
   }
 
   renovarSessao(sessao: Sessao): boolean {
-
     if (!sessao.isValida()) {
       return false;
     }

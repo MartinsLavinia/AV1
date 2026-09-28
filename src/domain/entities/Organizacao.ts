@@ -1,4 +1,4 @@
-import { Contrato } from './Contrato';
+import { Contrato } from './Contrato.js';
 
 export class Organizacao {
     id: string;
@@ -37,10 +37,11 @@ export class Organizacao {
     }
 
     alterarEndereco(novoEndereco: string): void {
-        // Implementação
+        if (!novoEndereco.trim()) throw new Error('Endereço não pode ficar vazio.');
+        this.enderecoCompleto = novoEndereco.trim();
     }
 
     desativar(): void {
-        // Implementação
+        this.ativo = false;
     }
 }

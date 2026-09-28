@@ -3,11 +3,29 @@ import {
   readFileSync,
   writeFileSync,
   mkdirSync,
-  renameSync
+  renameSync,
+  openSync,
+  fsyncSync,
+  closeSync,
+  unlinkSync
 } from 'fs';
+import { randomUUID } from 'crypto';
 
 import { CriptografiaArquivo } from '../security/CriptografiaArquivo.js';
 import { GerenciadorChave } from '../security/GerenciadorChave.js';
+
+export interface OperacoesEscritaArquivo {
+  openSync: typeof openSync;
+  writeFileSync: typeof writeFileSync;
+  fsyncSync: typeof fsyncSync;
+  closeSync: typeof closeSync;
+  renameSync: typeof renameSync;
+  unlinkSync: typeof unlinkSync;
+}
+
+const operacoesEscritaPadrao: OperacoesEscritaArquivo = {
+  openSync, writeFileSync, fsyncSync, closeSync, renameSync, unlinkSync,
+};
 
 export class RepositorioArquivo {
 
@@ -15,7 +33,7 @@ export class RepositorioArquivo {
   private criptografia: CriptografiaArquivo;
   private gerenciadorChave: GerenciadorChave;
 
-  constructor(diretorio: string = './data') {
+  constructor(diretorio: string = './data', private readonly operacoes: OperacoesEscritaArquivo = operacoesEscritaPadrao) {
     this.diretorio = diretorio;
 
     this.criptografia = new CriptografiaArquivo();
@@ -27,6 +45,7 @@ export class RepositorioArquivo {
   }
 
   salvar(nomeArquivo: string, dados: unknown): void {
+    this.validarNome(nomeArquivo);
     const caminho = `${this.diretorio}/${nomeArquivo}`;
 
     const conteudo = JSON.stringify(dados);
@@ -36,18 +55,28 @@ export class RepositorioArquivo {
     const conteudoCriptografado =
       this.criptografia.criptografar(conteudo, chave);
 
-    const caminhoTemporario = `${caminho}.tmp`;
-
-    writeFileSync(
-        caminhoTemporario,
-        conteudoCriptografado,
-        'utf-8'
-    );
-
-    renameSync(caminhoTemporario, caminho);
+    const caminhoTemporario = `${caminho}.${randomUUID()}.tmp`;
+    let fd: number | undefined;
+    try {
+      fd = this.operacoes.openSync(caminhoTemporario, 'wx', 0o600);
+      this.operacoes.writeFileSync(fd, conteudoCriptografado, 'utf-8');
+      this.operacoes.fsyncSync(fd);
+    } catch (erro) {
+      try { if (fd !== undefined) this.operacoes.closeSync(fd); } catch { /* preserve original I/O error */ }
+      try { this.operacoes.unlinkSync(caminhoTemporario); } catch { /* cleanup best effort */ }
+      throw erro;
+    }
+    try { this.operacoes.closeSync(fd!); }
+    catch (erro) {
+      try { this.operacoes.unlinkSync(caminhoTemporario); } catch { /* cleanup best effort */ }
+      throw erro;
+    }
+    try { this.operacoes.renameSync(caminhoTemporario, caminho); }
+    catch (erro) { try { this.operacoes.unlinkSync(caminhoTemporario); } catch { /* cleanup best effort */ } throw erro; }
   }
 
   carregar<T>(nomeArquivo: string): T | null {
+    this.validarNome(nomeArquivo);
     const caminho = `${this.diretorio}/${nomeArquivo}`;
 
     if (!existsSync(caminho)) {
@@ -69,8 +98,13 @@ export class RepositorioArquivo {
   }
 
   existe(nomeArquivo: string): boolean {
+    this.validarNome(nomeArquivo);
     const caminho = `${this.diretorio}/${nomeArquivo}`;
 
     return existsSync(caminho);
+  }
+
+  private validarNome(nome: string): void {
+    if (!/^[\w.-]+\.json$/.test(nome)) throw new Error('Nome de arquivo de persistência inválido.');
   }
 }

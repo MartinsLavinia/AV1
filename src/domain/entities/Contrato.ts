@@ -26,10 +26,12 @@ export class Contrato {
     }
 
     estaVigente(): boolean {
-        return false;
+        const agora = new Date();
+        return this.dataAssinatura <= agora && this.dataVencimento >= agora;
     }
 
     renovar(novoVencimento: Date): void {
-        // Implementação
+        if (novoVencimento <= this.dataVencimento) throw new Error('O novo vencimento deve ser posterior ao atual.');
+        this.dataVencimento = novoVencimento;
     }
-}   
+}

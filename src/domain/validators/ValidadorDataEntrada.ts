@@ -1,8 +1,9 @@
-import { Validador } from './Validador';
+import { Validador } from './Validador.js';
 
 export class ValidadorDataEntrada extends Validador {
 
   validar(data: Date): boolean {
+    if (!(data instanceof Date) || Number.isNaN(data.getTime())) return false;
     const hoje = new Date();
 
     if (data > hoje) {

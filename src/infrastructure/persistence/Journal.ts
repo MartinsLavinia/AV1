@@ -1,4 +1,4 @@
-import { existsSync, statSync, renameSync } from "fs";
+import { existsSync, statSync, renameSync, readdirSync, unlinkSync } from "fs";
 
 import { RepositorioArquivo } from "./RepositorioArquivo.js";
 import { Transacao, TipoEventoTransacao } from "./Transacao.js";
@@ -19,19 +19,19 @@ export class Journal {
 
     this.repositorio.salvar("journal.json", journalAtual);
 
-    this.repositorio.salvar("journal.json", journalAtual);
-
     this.verificarRotacao();
   }
 
   listarTransacoes(): Transacao[] {
-    return this.repositorio.carregar<Transacao[]>("journal.json") ?? [];
+    const arquivos = readdirSync('./data').filter(n => /^journal-.*\.json$/.test(n)).sort();
+    const anteriores = arquivos.flatMap(n => this.repositorio.carregar<Transacao[]>(n) ?? []);
+    return [...anteriores, ...(this.repositorio.carregar<Transacao[]>("journal.json") ?? [])];
   }
 
   marcarComoAplicada(transacao: Transacao): void {
     const eventoAplicacao = new Transacao(
       transacao.operacao,
-      transacao.dados,
+      null,
       transacao.transacaoId,
       TipoEventoTransacao.APLICACAO,
     );
@@ -60,17 +60,16 @@ export class Journal {
   }
 
   limparAntigas(): void {
-    const journalAtual = this.listarTransacoes();
-
     const limite = new Date();
-
     limite.setDate(limite.getDate() - 180);
-
-    const journalFiltrado = journalAtual.filter(
-      (transacao) => new Date(transacao.dataHora) >= limite,
-    );
-
-    this.repositorio.salvar("journal.json", journalFiltrado);
+    for (const nome of readdirSync('./data').filter(n => /^journal-.*\.json$/.test(n))) {
+      const registros = this.repositorio.carregar<Transacao[]>(nome) ?? [];
+      const mantidos = registros.filter(t => new Date(t.dataHora) >= limite);
+      if (mantidos.length) this.repositorio.salvar(nome, mantidos);
+      else unlinkSync(`./data/${nome}`);
+    }
+    const atual = this.repositorio.carregar<Transacao[]>('journal.json') ?? [];
+    this.repositorio.salvar('journal.json', atual.filter(t => new Date(t.dataHora) >= limite));
   }
 
   private verificarRotacao(): void {

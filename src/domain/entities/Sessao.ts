@@ -1,4 +1,4 @@
-import { PapelUsuario } from "../enums";
+import { PapelUsuario } from "../enums.js";
 
 export class Sessao {
   token: string;
